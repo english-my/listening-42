@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>英語並び替え10問クイズ</title>
+  <style>
+body {
+  font-family: sans-serif;
+  padding: 20px;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.word-bank, .sentence-box {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 20px;
+  justify-content: center;
+}
+
+.word {
+  border: 1px solid #aaa;
+  padding: 8px 12px;
+  background: #e0f7fa;
+  cursor: move;
+  border-radius: 5px;
+  font-size: 16px;
+  white-space: nowrap;
+}
+
+.slot {
+  border: 2px dashed #ccc;
+  min-width: 60px;
+  min-height: 30px;
+  padding: 10px;
+  text-align: center;
+  background: #fff;
+  border-radius: 5px;
+  box-sizing: border-box;
+  word-break: break-word;
+  flex-shrink: 0;
+}
+
+button {
+  font-size: 16px;
+  padding: 8px 16px;
+  margin: 5px;
+}
+
+    .correct {
+  background-color: #c8e6c9; /* 薄い緑 */
+}
+.incorrect {
+  background-color: #ffcdd2; /* 薄い赤 */
+}
+  </style>
+</head>
+<body>
+
+<h2 id="questionTitle">🧩 英文並び替えクイズ（1問目）</h2>
+
+<div class="sentence-box" id="sentenceBox"></div>
+<div class="word-bank" id="wordBank"></div>
+
+<button onclick="playAudio()">▶ 音声を再生する</button>
+<button onclick="nextQuestion()" style="display: none;" id="nextBtn">➡ 次の問題へ</button>
+<button onclick="skipQuestion()" id="skipBtn">⏭ SKIP</button>
+
+<p id="correctAnswer" style="font-weight: bold; color: green; margin-top: 10px;"></p>
+
+<audio id="voicePlayer">
+  <source id="audioSource" src="" type="audio/mpeg">
+</audio>
+
+<script>
+const sentences = [
+  "I joined the meeting late because I lost track of time.",
+  "Can you hear me? I think my microphone isn’t working.",
+  "I saw your presentation, and it was very clear. Good job!",
+  "I forgot to share my screen during the meeting. Let me try again.",
+  "We discussed the project details and set new deadlines.",
+  "I missed what you said. Could you repeat it, please?",
+  "I turned off my video because my internet connection is slow.",
+  "Let’s review the meeting minutes before we end the call.",
+  "I couldn’t join the meeting because I had technical issues.",
+  "She gave us helpful feedback during the online meeting."
+];
+
+
+  let current = 0;
+
+  function loadQuestion(index) {
+    document.getElementById("sentenceBox").innerHTML = "";
+    document.getElementById("wordBank").innerHTML = "";
+    document.getElementById("nextBtn").style.display = "none";
+    document.getElementById("questionTitle").innerText = `🧩 英文並び替えクイズ（${index + 1}問目）`;
+
+    const sentence = sentences[index];
+    const words = sentence.split(" ");
+    const shuffled = [...words].sort(() => Math.random() - 0.5);
+
+    // スロットを表示
+    for (let i = 0; i < words.length; i++) {
+      const slot = document.createElement("div");
+      slot.className = "slot";
+      slot.ondrop = drop;
+      slot.ondragover = allowDrop;
+      slot.dataset.expected = words[i];
+      slot.onclick = () => checkCompletion();
+      document.getElementById("sentenceBox").appendChild(slot);
+    }
+
+    // 単語を追加
+    for (let i = 0; i < shuffled.length; i++) {
+      const word = document.createElement("div");
+      word.className = "word";
+      word.draggable = true;
+      word.id = `word${index}_${i}`;
+      word.innerText = shuffled[i];
+      word.ondragstart = drag;
+      document.getElementById("wordBank").appendChild(word);
+    }
+
+// 音声ファイルを切り替え
+const audio = document.getElementById("audioSource");
+audio.src = `42-${index + 1}.mp3`;
+document.getElementById("voicePlayer").load();
+
+  }
+
+  function allowDrop(ev) {
+    ev.preventDefault();
+  }
+
+  function drag(ev) {
+    ev.dataTransfer.setData("text", ev.target.id);
+  }
+
+  function drop(ev) {
+    ev.preventDefault();
+    const wordId = ev.dataTransfer.getData("text");
+    const word = document.getElementById(wordId);
+    if (!ev.target.hasChildNodes()) {
+      ev.target.appendChild(word);
+      checkCompletion();
+    }
+  }
+
+ function checkCompletion() {
+  const slots = document.querySelectorAll(".slot");
+  let correct = true;
+
+  slots.forEach((slot, i) => {
+    const word = slot.firstChild;
+    if (!word) {
+      slot.classList.remove("correct", "incorrect");
+      correct = false;
+    } else if (word.innerText === slot.dataset.expected) {
+      slot.classList.add("correct");
+      slot.classList.remove("incorrect");
+    } else {
+      slot.classList.add("incorrect");
+      slot.classList.remove("correct");
+      correct = false;
+    }
+  });
+
+  if (correct) {
+    document.getElementById("nextBtn").style.display = "inline-block";
+  } else {
+    document.getElementById("nextBtn").style.display = "none";
+  }
+}
+
+  function playAudio() {
+    const audio = document.getElementById("voicePlayer");
+    audio.play();
+  }
+
+  function nextQuestion() {
+    current++;
+    if (current < sentences.length) {
+      loadQuestion(current);
+    } else {
+      document.body.innerHTML = "<h2>🎉 全部終わりました！お疲れさまでした！</h2>";
+    }
+  }
+  
+ function skipQuestion() {
+  // 正解文を取得
+  const correct = sentences[current];
+
+  // 正解を画面に表示
+  const answerDisplay = document.getElementById("correctAnswer");
+  answerDisplay.textContent = "✔ 正解: " + correct;
+
+  // 3秒後に次の問題へ自動で進む
+  setTimeout(() => {
+    current++;
+    if (current < sentences.length) {
+      answerDisplay.textContent = ""; // 表示をリセット
+      loadQuestion(current);
+    } else {
+      document.body.innerHTML = "<h2>🎉 全部終わりました！お疲れさまでした！</h2>";
+    }
+  }, 3000);
+}
+
+  // 最初の問題を読み込み
+  loadQuestion(current);
+</script>
+
+</body>
+</html>
