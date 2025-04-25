@@ -3,75 +3,77 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>英語並び替え10問クイズ</title>
+  <title>英語並べ替えクイズ（スマホ対応・完全版）</title>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
   <style>
-body {
-  font-family: sans-serif;
-  padding: 20px;
-  max-width: 100%;
-  box-sizing: border-box;
-}
-
-.word-bank, .sentence-box {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 20px;
-  justify-content: center;
-}
-
-.word {
-  border: 1px solid #aaa;
-  padding: 8px 12px;
-  background: #e0f7fa;
-  cursor: move;
-  border-radius: 5px;
-  font-size: 16px;
-  white-space: nowrap;
-}
-
-.slot {
-  border: 2px dashed #ccc;
-  min-width: 60px;
-  min-height: 30px;
-  padding: 10px;
-  text-align: center;
-  background: #fff;
-  border-radius: 5px;
-  box-sizing: border-box;
-  word-break: break-word;
-  flex-shrink: 0;
-}
-
-button {
-  font-size: 16px;
-  padding: 8px 16px;
-  margin: 5px;
-}
-
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      margin: 0;
+      background: #ffffff;
+    }
+    h2 {
+      text-align: center;
+    }
+    ul {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 0;
+      margin: 10px auto;
+      list-style: none;
+      justify-content: center;
+      max-width: 90vw;
+    }
+    li {
+      padding: 10px 14px;
+      background: #e0f7fa;
+      border: 1px solid #aaa;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: grab;
+      word-break: break-word;
+    }
     .correct {
-  background-color: #c8e6c9; /* 薄い緑 */
-}
-.incorrect {
-  background-color: #ffcdd2; /* 薄い赤 */
-}
+      background-color: #a5d6a7 !important;
+    }
+    .incorrect {
+      background-color: #ef9a9a !important;
+    }
+    button {
+      font-size: 16px;
+      padding: 12px 20px;
+      margin: 15px auto;
+      background-color: #ffd54f;
+      border: none;
+      border-radius: 8px;
+      color: #333;
+      display: block;
+      width: 90%;
+      max-width: 320px;
+    }
+    #correctAnswer {
+      font-weight: bold;
+      color: #2e7d32;
+      text-align: center;
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
 
-<h2 id="questionTitle">🧩 英文並び替えクイズ（1問目）</h2>
-
-<div class="sentence-box" id="sentenceBox"></div>
-<div class="word-bank" id="wordBank"></div>
+<h2 id="questionTitle">🧩 英文並べ替えクイズ（1問目）</h2>
+<ul id="wordBank"></ul>
+<p id="correctAnswer"></p>
 
 <button onclick="playAudio()">▶ 音声を再生する</button>
-<button onclick="nextQuestion()" style="display: none;" id="nextBtn">➡ 次の問題へ</button>
-<button onclick="skipQuestion()" id="skipBtn">⏭ SKIP</button>
-
-<p id="correctAnswer" style="font-weight: bold; color: green; margin-top: 10px;"></p>
+<button onclick="nextQuestion()" id="nextBtn" style="display:none;">➡ 次の問題へ</button>
 
 <audio id="voicePlayer">
   <source id="audioSource" src="" type="audio/mpeg">
+</audio>
+<audio id="successSound">
+  <source src="https://cdn.pixabay.com/audio/2022/03/15/audio_48d1e2009a.mp3" type="audio/mpeg">
 </audio>
 
 <script>
@@ -89,75 +91,50 @@ const sentences = [
 ];
 
 
-  let current = 0;
+let current = 0;
+let sortableInstance = null;
 
-  function loadQuestion(index) {
-    document.getElementById("sentenceBox").innerHTML = "";
-    document.getElementById("wordBank").innerHTML = "";
-    document.getElementById("nextBtn").style.display = "none";
-    document.getElementById("questionTitle").innerText = `🧩 英文並び替えクイズ（${index + 1}問目）`;
+function loadQuestion(index) {
+  const wordBank = document.getElementById("wordBank");
+  wordBank.innerHTML = "";
+  document.getElementById("nextBtn").style.display = "none";
+  document.getElementById("correctAnswer").textContent = "";
+  document.getElementById("questionTitle").innerText = `🧩 英文並べ替えクイズ（${index + 1}問目）`;
 
-    const sentence = sentences[index];
-    const words = sentence.split(" ");
-    const shuffled = [...words].sort(() => Math.random() - 0.5);
+  const sentence = sentences[index];
+  const words = sentence.split(" ");
+  const shuffled = [...words].sort(() => Math.random() - 0.5);
 
-    // スロットを表示
-    for (let i = 0; i < words.length; i++) {
-      const slot = document.createElement("div");
-      slot.className = "slot";
-      slot.ondrop = drop;
-      slot.ondragover = allowDrop;
-      slot.dataset.expected = words[i];
-      slot.onclick = () => checkCompletion();
-      document.getElementById("sentenceBox").appendChild(slot);
-    }
-
-    // 単語を追加
-    for (let i = 0; i < shuffled.length; i++) {
-      const word = document.createElement("div");
-      word.className = "word";
-      word.draggable = true;
-      word.id = `word${index}_${i}`;
-      word.innerText = shuffled[i];
-      word.ondragstart = drag;
-      document.getElementById("wordBank").appendChild(word);
-    }
-
-// 音声ファイルを切り替え
-const audio = document.getElementById("audioSource");
-audio.src = `42-${index + 1}.mp3`;
-document.getElementById("voicePlayer").load();
-
+  for (let word of shuffled) {
+    const li = document.createElement("li");
+    li.textContent = word;
+    wordBank.appendChild(li);
   }
 
-  function allowDrop(ev) {
-    ev.preventDefault();
+  // 既存のSortableを破棄してから再初期化
+  if (sortableInstance) {
+    sortableInstance.destroy();
   }
 
-  function drag(ev) {
-    ev.dataTransfer.setData("text", ev.target.id);
-  }
-
-  function drop(ev) {
-    ev.preventDefault();
-    const wordId = ev.dataTransfer.getData("text");
-    const word = document.getElementById(wordId);
-    if (!ev.target.hasChildNodes()) {
-      ev.target.appendChild(word);
+  sortableInstance = new Sortable(wordBank, {
+    animation: 150,
+    onSort: function () {
       checkCompletion();
     }
-  }
+  });
 
- function checkCompletion() {
-  const slots = document.querySelectorAll(".slot");
+  const audio = document.getElementById("audioSource");
+  audio.src = `42-${index + 1}.mp3`;
+  document.getElementById("voicePlayer").load();
+}
+
+function checkCompletion() {
+  const slots = document.querySelectorAll("#wordBank li");
+  const currentSentence = sentences[current].split(" ");
   let correct = true;
 
   slots.forEach((slot, i) => {
-    const word = slot.firstChild;
-    if (!word) {
-      slot.classList.remove("correct", "incorrect");
-      correct = false;
-    } else if (word.innerText === slot.dataset.expected) {
+    if (slot.textContent === currentSentence[i]) {
       slot.classList.add("correct");
       slot.classList.remove("incorrect");
     } else {
@@ -167,50 +144,29 @@ document.getElementById("voicePlayer").load();
     }
   });
 
-  if (correct) {
-    document.getElementById("nextBtn").style.display = "inline-block";
+  if (correct && slots.length === currentSentence.length) {
+    document.getElementById("correctAnswer").textContent = "🎉 正解です！";
+    document.getElementById("nextBtn").style.display = "block";
+    document.getElementById("successSound").play();
   } else {
     document.getElementById("nextBtn").style.display = "none";
   }
 }
 
-  function playAudio() {
-    const audio = document.getElementById("voicePlayer");
-    audio.play();
-  }
-
-  function nextQuestion() {
-    current++;
-    if (current < sentences.length) {
-      loadQuestion(current);
-    } else {
-      document.body.innerHTML = "<h2>🎉 全部終わりました！お疲れさまでした！</h2>";
-    }
-  }
-  
- function skipQuestion() {
-  // 正解文を取得
-  const correct = sentences[current];
-
-  // 正解を画面に表示
-  const answerDisplay = document.getElementById("correctAnswer");
-  answerDisplay.textContent = "✔ 正解: " + correct;
-
-  // 3秒後に次の問題へ自動で進む
-  setTimeout(() => {
-    current++;
-    if (current < sentences.length) {
-      answerDisplay.textContent = ""; // 表示をリセット
-      loadQuestion(current);
-    } else {
-      document.body.innerHTML = "<h2>🎉 全部終わりました！お疲れさまでした！</h2>";
-    }
-  }, 3000);
+function playAudio() {
+  document.getElementById("voicePlayer").play();
 }
 
-  // 最初の問題を読み込み
-  loadQuestion(current);
-</script>
+function nextQuestion() {
+  current++;
+  if (current < sentences.length) {
+    loadQuestion(current);
+  } else {
+    document.body.innerHTML = "<h2 style='text-align:center;'>🎉 全問終了！お疲れさまでした！</h2>";
+  }
+}
 
+loadQuestion(current);
+</script>
 </body>
 </html>
